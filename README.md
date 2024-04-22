@@ -20,135 +20,94 @@ Program to implement the the Logistic Regression Using Gradient Descent.
 Developed by: YUVARAJ B
 RegisterNumber: 212222040186
 
-
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import optimize    #to remove unwanted data and memory storage
+dataset=pd.read_csv("Placement_Data.csv")
+dataset
 
-data=np.loadtxt("/content/ex2data1 (1).txt",delimiter=',')
-X=data[:,[0,1]]
-y=data[:,2]
+dataset=dataset.drop('sl_no',axis=1)
+dataset=dataset.drop('salary',axis=1)
 
-X[:5]
+dataset["gender"]=dataset["gender"].astype('category')
+dataset["ssc_b"]=dataset["ssc_b"].astype('category')
+dataset["hsc_b"]=dataset["hsc_b"].astype('category')
+dataset["degree_t"]=dataset["degree_t"].astype('category')
+dataset["workex"]=dataset["workex"].astype('category')
+dataset["specialisation"]=dataset["specialisation"].astype('category')
+dataset["status"]=dataset["status"].astype('category')
+dataset["hsc_s"]=dataset["hsc_s"].astype('category')
+dataset.dtypes
 
-y[:5]
+dataset["gender"]=dataset["gender"].cat.codes
+dataset["ssc_b"]=dataset["ssc_b"].cat.codes
+dataset["hsc_b"]=dataset["hsc_b"].cat.codes
+dataset["degree_t"]=dataset["degree_t"].cat.codes
+dataset["workex"]=dataset["workex"].cat.codes
+dataset["specialisation"]=dataset["specialisation"].cat.codes
+dataset["status"]=dataset["status"].cat.codes
+dataset["hsc_s"]=dataset["hsc_s"].cat.codes
+dataset
 
-Visualizing the data
-plt.figure()
-plt.scatter(X[y==1][:,0],X[y==1][:,1],label="Admitted")
-plt.scatter(X[y==0][:,0],X[y==0][:,1],label="Not admitted")
-plt.xlabel("Exam 1 score")
-plt.ylabel("Exam 2 score")
-plt.legend()
-plt.show()
+x=dataset.iloc[:, :-1].values
+y=dataset.iloc[: ,-1].values
+y
 
-Sigmoid fuction
+theta=np.random.randn(x.shape[1])
+Y=y
 def sigmoid(z):
-  return 1/(1+np.exp(-z))
-  
-plt.plot()
-X_plot=np.linspace(-10,10,100)
-plt.plot(X_plot, sigmoid(X_plot))
-plt.show()
+    return 1/(1+np.exp(-z))
 
-def costFuction(theta,X,y):
-  h=sigmoid(np.dot(X,theta))
-  J= -(np.dot(y, np.log(h)) + np.dot(1-y,np.log(1-h))) / X.shape[0]
-  grad = np.dot(X.T, h-y) / X.shape[0]
-  return J,grad
-  
-X_train=np.hstack((np.ones((X.shape[0],1)),X))
-theta=np.array([0,0,0])
-J, grad=costFuction(theta, X_train, y)
-print(J)
-print(grad)
+def loss(theta,x,Y):
+      h=sigmoid(x.dot(theta))
+      return -np.sum(y*np.log(h)+(1-y)*np.log(1-h))
+def gradient_descent(theta,x,Y,alpha,num_iterations):
+    m=len(y)
+    for i in range(num_iterations):
+        h=sigmoid(x.dot(theta))
+        gradient=x.T.dot(h-y)/m
+        theta-=alpha * gradient
+    return theta
 
-X_train=np.hstack((np.ones((X.shape[0],1)),X))
-theta=np.array([-24,0.2,0.2])
-J, grad=costFuction(theta, X_train, y)
-print(J)
-print(grad)
+theta=gradient_descent(theta,x,Y,alpha=0.01,num_iterations=1000)
 
-def cost(theta,X,y):
-  h = sigmoid(np.dot(X,theta))
-  J= -(np.dot(y, np.log(h)) + np.dot(1-y, np.log(1-h))) / X.shape[0]
-  return J
-  
-def gradient(theta,X,y):
-  h=sigmoid(np.dot(X,theta))
-  grad= np.dot(X.T, h-y) / X.shape[0]
-  return grad
-  
-X_train = np.hstack((np.ones((X.shape[0],1)),X))
-theta= np.array([0,0,0])
-res = optimize.minimize(fun=cost, x0=theta, args=(X_train,y),method="Newton-CG",jac=gradient)
-print(res.fun)
-print(res.x)
+def predict(theta,x):
+    h=sigmoid(x.dot(theta))
+    y_pred=np.where(h>=0.5,1,0)
+    return y_pred
+y_pred=predict(theta,x)
 
-def plotDecisionBoundary(theta,X,y):
-  x_min, x_max = X[:,0].min() - 1, X[:,0].max()+1
-  y_min, y_max = X[:,1].min() - 1, X[:,1].max()+1
-  xx, yy = np.meshgrid(np.arange(x_min,x_max,0.1),
-                       np.arange(y_min,y_max,0.1))
-  X_plot = np.c_[xx.ravel(), yy.ravel()]
-  X_plot = np.hstack((np.ones((X_plot.shape[0],1)),X_plot))
-  y_plot = np.dot(X_plot, theta).reshape(xx.shape)
+accuracy=np.mean(y_pred.flatten()==Y)
+print("Accuracy:",accuracy)
 
-  plt.figure()
-  plt.scatter(X[y==1][:,0],X[y==1][:,1],label="Admitted")
-  plt.scatter(X[y==0][:,0],X[y==0][:,1],label="Not admitted")
-  plt.contour(xx,yy,y_plot, levels=[0])
-  plt.xlabel("Exam 1 score")
-  plt.ylabel("Exam 2 score")
-  plt.legend()
-  plt.show()
-  
-  plotDecisionBoundary(res.x,X,y)
-  
-prob = sigmoid(np.dot(np.array([1,45,85]),res.x))
-print(prob)
+print(y_pred)
+print(y)
 
-def predict(theta,X):
-  X_train = np.hstack((np.ones((X.shape[0],1)),X))
-  prob = sigmoid(np.dot(X_train,theta))
-  return(prob >= 0.5).astype(int)
-  
-np.mean(predict(res.x,X)==y)
-*/
+xnew=np.array([[0,87,0,95,0,2,78,2,0,0,1,0]])
+y_prednew=predict(theta,xnew)
+print(y_prednew)
+
+xnew=np.array([[0,0,0,0,0,2,8,2,0,0,1,0]])
+y_prednew=predict(theta,xnew)
+print(y_prednew)
+
 ```
-
 ## Output:
-#### Array Value of x
-![Screenshot 2023-05-11 155230](https://github.com/Yamunaasri/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/115707860/033e44c7-01d8-4694-af58-e47e586bc326)
 
-#### Array Value of y
-![Screenshot 2023-05-11 155238](https://github.com/Yamunaasri/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/115707860/3d9afb2e-3520-4ab7-a959-1685a95c48cb)
+![image](https://github.com/Jaiganesh235/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/118657189/1b517e96-f207-4f2b-8edc-001dbfc8857c)
 
-#### Exam 1 - score graph
-![Screenshot 2023-05-11 161150](https://github.com/Yamunaasri/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/115707860/6c725e84-829f-459b-9dab-ec3c9c4316fb)
+![image](https://github.com/Jaiganesh235/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/118657189/4c0cc6a1-a37b-4074-9e3f-f340fddd8bee)
 
+![image](https://github.com/Jaiganesh235/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/118657189/dc5a7fcb-ba8e-4add-9f04-e65805f22310)
 
-#### Sigmoid function graph
-![Screenshot 2023-05-11 155309](https://github.com/Yamunaasri/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/115707860/b114a544-ffeb-42c5-a36d-e6bdb52a65ea)
+![image](https://github.com/Jaiganesh235/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/118657189/7fa94896-6709-4b35-b582-d36fe86675fe)
 
-#### X_train_grad value
-![Screenshot 2023-05-11 155324](https://github.com/Yamunaasri/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/115707860/6d006193-6d73-44d9-8290-4d82eb608d7e)
+![image](https://github.com/Jaiganesh235/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/118657189/aa1fa0db-0cb4-4abb-9b17-fb0cbf8cd850)
 
-#### Y_train_grad value
-![Screenshot 2023-05-11 155335](https://github.com/Yamunaasri/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/115707860/71194e2e-7353-4bf9-93d7-027575624256)
+![image](https://github.com/Jaiganesh235/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/118657189/a50a483b-5ff7-4bb6-8c15-7c6086f9f382)
 
-#### Print res.x
-![Screenshot 2023-05-11 155723](https://github.com/Yamunaasri/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/115707860/16c592fc-3657-4346-bdb5-c27acad5a7f8)
+![image](https://github.com/Jaiganesh235/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/118657189/3a8e10cb-9a59-40a6-a52e-8005044a0223)
 
-#### Decision boundary - graph for exam score
-![Screenshot 2023-05-11 155730](https://github.com/Yamunaasri/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/115707860/beecf6cd-c08f-47df-bb02-00eadb43d41f)
-
-
-#### Proability value 
-![Screenshot 2023-05-11 155822](https://github.com/Yamunaasri/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/115707860/b92b63f4-f532-462a-8593-d86f4cc83efd)
-
-#### Prediction value of mean
-![Screenshot 2023-05-11 155829](https://github.com/Yamunaasri/-Implementation-of-Logistic-Regression-Using-Gradient-Descent/assets/115707860/f8ee18ed-c208-47d9-ac94-7704d6852df1)
 
 
 ## Result:
